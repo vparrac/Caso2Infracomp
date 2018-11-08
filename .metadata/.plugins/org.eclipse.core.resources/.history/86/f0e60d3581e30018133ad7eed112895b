@@ -1,0 +1,93 @@
+package uniandes.isis2203.logisticaAeroportuaria.carga;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
+import uniandes.gload.core.Task;
+import uniandes.isis2203.logisticaAeroportuaria.Cliente.Cliente;
+public class ClientServerTask  extends Task {
+
+	private Cliente cliente;
+	public ClientServerTask() {
+		cliente = new Cliente();
+	}
+	
+	@Override
+	public void fail() {
+		System.out.println(Task.MENSAJE_FAIL);
+		BufferedWriter bw = null;
+	    FileWriter fw = null;
+	    try {
+	        String data = "1,";
+	        File file = new File("./data/log.txt");
+	        // Si el archivo no existe, se crea!
+	        if (!file.exists()) {
+	            file.createNewFile();
+	        }
+	        // flag true, indica adjuntar información al archivo.
+	        fw = new FileWriter(file.getAbsoluteFile(), true);
+	        bw = new BufferedWriter(fw);
+	        bw.write(data);
+	        
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	                        //Cierra instancias de FileWriter y BufferedWriter
+	            if (bw != null)
+	                bw.close();
+	            if (fw != null)
+	                fw.close();
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	        }
+	    }
+		
+	}
+
+	@Override
+	public void success() {
+		System.out.println(Task.OK_MESSAGE);
+	}
+
+	@Override
+	public void execute() {
+		try {
+			System.out.println("Iniciando conexión");		
+			cliente.establecerConexion();
+			success();
+		
+			System.out.println("Escogiendo algoritmos");
+			cliente.seleccionarAlgoritmos();
+			success();
+		
+			System.out.println("Enviando certificado");
+			cliente.enviarCertificado();
+			success();
+			
+			System.out.println("Recibiendo certificado");
+			cliente.recibirCertificado();
+			success();
+			
+			System.out.println("Recibiendo llave simetrica");
+			cliente.recibirLlaveSImetrica();
+			success();
+			
+			System.out.println("Generando consulta");
+			String rta = cliente.realizarConsulta();
+			System.out.println("SERVER: "+rta);
+			success();
+			
+			System.out.println("Cerrando sockets, lectores y escritores");
+			cliente.finalizar();
+			success();
+			
+		}
+		catch (Exception e) {
+			fail();
+		}
+		
+	}
+}

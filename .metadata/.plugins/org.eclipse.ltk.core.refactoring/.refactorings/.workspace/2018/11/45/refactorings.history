@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">&#x0A;<refactoring comment="Delete resource &apos;srvcifIC201820&apos;" deleteContents="false" description="Delete resource &apos;srvcifIC201820&apos;" element1="/srvcifIC201820" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1541700948237"/>&#x0A;<refactoring comment="Delete resource &apos;srvIC201820&apos;" deleteContents="false" description="Delete resource &apos;srvIC201820&apos;" element1="/srvIC201820" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1541700991237"/>
+</session>

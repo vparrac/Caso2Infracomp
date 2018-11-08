@@ -1,0 +1,243 @@
+package uniandes.isis2203.logisticaAeroportuaria.carga;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Scanner;
+import javax.xml.bind.DatatypeConverter;
+/**
+ * Clase que representa un cliente que entra en contacto con el servidor siguiendo los protocolos
+ * descritos en el caso
+ * Este cliente trabaja con se servidor cifrado
+ * @author Valerie Parra Cortés
+ * @author Pablo Andrés Suarez Murillo
+ */
+public class Cliente {
+	/**
+	 * Vector de String que guarda el nombre de los cifrados simétricos soportados por el programa
+	 */
+	private String[] ALGs;
+	/**
+	 * Representa el comando para indicar que el cifrado simetrico que se utilizará será RSA
+	 */
+	private String RSA="RSA";
+	/**
+	 * Vector de String que guarda el nombre de los codigos de autenticación soportados por el sistema
+	 */
+	private String[] ALGd;
+	
+	/**
+	 * Puerto donde se correra el servidor
+	 */
+	public final static int PUERTO=8081;
+	/**
+	 * El cifrador para la parte de cifrado simétrico
+	 */
+	private ICifradorSimetrico cifradoSimetrico;
+	/**
+	 * El cifrador para la parde del cifrado asimetrico
+	 */
+	private ICifradorAsimetrico cifradorAsimetrico;
+	/**
+	 * El cifrador pra el HMAC
+	 */
+	private MessageAuthenticationCode codigo;
+	/**
+	 * Socket para la comunicación
+	 */
+	private Socket sck_cliente;
+	/**
+	 * Lector para la comunicación
+	 */
+	private BufferedReader in;
+	/**
+	 * Escritor para la comunicación
+	 */
+	private  PrintWriter out;
+	/**
+	 * Lector para el input del usuario
+	 */
+	private Scanner stdIn;
+	/**
+	 * Atributo que representa el certificado que se va a recibir del servidor
+	 */
+	private X509Certificate certificadoServidor;
+	
+	/**
+	 * Constructor de la clase cliente, inicializa el vector de String con los cifrados simetricos permitidos y el
+	 * vector con los MAC 
+	 */
+	
+	public Cliente() {
+		ALGs= new String[2];
+		ALGs[1]="AES";
+		ALGs[2]="Blowfish";
+		ALGd= new String[3];
+		ALGd[1]="HMACMD5";
+		ALGd[2]="HMACSHA1";
+		ALGd[1]="HMACSHA256";
+	}
+	
+
+	/**
+	 * Método que implementa el protocolo de comunicación cliente-servidor para las consulta
+	 * que quiera realizar el cliente
+	 * @param args del mundo
+	 */
+
+	@SuppressWarnings("resource")
+	
+	/**
+	 * Método que crea el socket con la dirección local en el puerto indicado en la constante de la clase
+	 * El método inicia el protocolo de comunicación con el servidor
+	 * Si hay algún error iniciando la comunicación imprime un mensaje y cierra el socket
+	 */
+	public void establecerConexion() throws Exception{		
+		sck_cliente=new Socket ("localhost",PUERTO);
+		out=new PrintWriter(sck_cliente.getOutputStream(),true);
+		in= new BufferedReader(new InputStreamReader(sck_cliente.getInputStream()));
+		@SuppressWarnings("unused")
+		BufferedReader stdIn= new BufferedReader(new InputStreamReader(System.in));
+		out.println(Protocolo.HOLA);
+		String msgResp = in.readLine();
+		if(msgResp.equals(Protocolo.ERROR)){
+			System.out.println("ERROR iniciando comunicación");
+			sck_cliente.close();
+		}
+		else if(msgResp.equals(Protocolo.OK))
+			System.out.println("Conexión exitosa");
+
+	}
+	/**
+	 * Método que permite que el cliente introduzca los algoritmos, los algoritmos los introduce
+	 * el cliente separados por dos puntos
+	 */
+	public  void seleccionarAlgoritmos() throws Exception{		
+		
+		//System.out.println("Escriba los algoritmos a usar separados por dos puntos; ALs:Ala:AlHMAC.");
+		//System.out.println("los algoritmos deben estar tal como se indica en el caso Ej: Blowfish:RSA:HMACSHA1");
+		
+		int cs = (int) Math.random()*5000%2; //Escoge un cifrado simetrico aleatoriamente 
+		int ca = (int) Math.random()*5000%3; //Escoge un HMAC aleatoriamente
+		
+		String algoritmos= ALGs[cs]+Protocolo.SEPARADOR_PRINCIPAL+this.RSA+Protocolo.SEPARADOR_PRINCIPAL+ALGd[ca];
+		
+		System.out.println("Los algoritmo escogidos fueron : "+algoritmos);
+		
+		cifradoSimetrico=new CifradorSimetrico(ALGs[cs]);				
+		cifradorAsimetrico= new CifradorAsimetrico(this.RSA);
+		codigo=new MessageAuthenticationCode(ALGd[ca]);
+		
+		out.println(Protocolo.ALGORTIMOS+Protocolo.SEPARADOR_PRINCIPAL+algoritmos);
+		
+		String rta= in.readLine();		
+		if(rta.equals(Protocolo.OK)){
+			System.out.println("Selección de algoritmos: " + rta);
+		}
+		else if(rta.equals(Protocolo.ERROR)) {
+			sck_cliente.close();
+			throw new Exception("El servidor no soporta alguno de losalgoritmos");
+		}
+
+	}
+	/**
+	 * Método que crea un certificado local en el protocoloa X509
+	 * Luego de creado el certificado es encapsulado y enviado por el Socket
+	 */
+	public void enviarCertificado() throws Exception{
+		String certificadoEnString = "";
+		X509Certificate certificado= GeneradorCertificados.createCertificate(cifradorAsimetrico.getKeys());
+		byte[] certificadoEnBytes = certificado.getEncoded( );
+		certificadoEnString = printHexBinary(certificadoEnBytes);
+		out.println(certificadoEnString);		
+		String rta = in.readLine();
+		if(rta.equalsIgnoreCase(Protocolo.ERROR)) {
+			sck_cliente.close();
+			throw new Exception("El servidor repudio el certificado");
+		}
+		
+	}
+	/**
+	 * Recibe y convierte en un objeto el certificado enviado por el servidor,
+	 * Una vez el certificado es recibido éxitosamente imprime "OK" en el socket de comunicación
+	 */
+	public void recibirCertificado() throws Exception{
+			String h = in.readLine();			
+			byte[] cer=DatatypeConverter.parseHexBinary(h);			
+			certificadoServidor = (X509Certificate)CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(cer));
+			out.println(Protocolo.OK);			
+	}
+	/**
+	 * Recibe la llave simétrica, la descifra con la llave privada del cliente,
+	 * Envía al servidor la misma llave cifrada con la llave publica del servidor
+	 */
+	public void recibirLlaveSImetrica() throws Exception{
+		
+			String llave = in.readLine();
+			byte[] llaveBytess=DatatypeConverter.parseHexBinary(llave);
+			byte[] llaveBytesDescifrada=cifradorAsimetrico.descifrar(llaveBytess);			
+
+			cifradoSimetrico.setKey(llaveBytesDescifrada);
+			byte[] llaveParaEnviar =cifradorAsimetrico.cifrarParaElServidor(llaveBytesDescifrada, certificadoServidor.getPublicKey());		
+			String mensajeAEnviar= DatatypeConverter.printHexBinary(llaveParaEnviar);
+			out.println(mensajeAEnviar);
+			String mensajeServidor=in.readLine();
+			if(mensajeServidor.equals(Protocolo.ERROR)) {
+				throw new Exception("Ha ocurrido un error recibiendo la llave simetrica");
+			}
+	}
+	
+	public String realizarConsulta() throws Exception {
+		System.out.println("Indique la consulta a realizar");
+		int numeroCuenta=(int) Math.random()*3000;
+		String fromUser=numeroCuenta+"";
+			byte[] consultaCifradaBytes=cifradoSimetrico.cifrar(fromUser);
+			//Se encapsula
+			String consultaString= DatatypeConverter.printHexBinary(consultaCifradaBytes);
+			//Se envia
+			out.println(consultaString);
+			//Se genera el HMAC
+			byte[] hmacConsulta= codigo.getDigest(fromUser.getBytes(),cifradoSimetrico.getKey());					
+			//Se encapsula
+			String hmacConsultaString= DatatypeConverter.printHexBinary(hmacConsulta);
+			//Se envia
+			out.println(hmacConsultaString);
+			String fromServer=in.readLine();
+			String[] rta= fromServer.split(Protocolo.SEPARADOR_PRINCIPAL);
+			return rta[1];	
+	}
+
+	/**
+	 * Cambia un arreglo de bits por una cadena en Hexa
+	 * @param byteArray el arreglo que se quiere convertir
+	 * @return String con la cadena 
+	 */
+
+	public  String printHexBinary(byte[] byteArray) {
+		String out = "";
+		for (int i = 0; i < byteArray.length; i++) {
+			if ((byteArray[i] & 0xff) <= 0xf) {
+				out += "0";
+			}
+			out += Integer.toHexString(byteArray[i] & 0xff).toUpperCase();
+		}
+		return out;
+	}
+	/**
+	 * Cierra el socket, el escritor y el lector asociados
+	 */
+	public  void finalizar() {
+		try {
+			this.in.close();
+			this.out.close();
+			this.sck_cliente.close();
+			System.out.println("Fin de la comunicación");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}

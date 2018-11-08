@@ -1,16 +1,49 @@
 package uniandes.isis2203.logisticaAeroportuaria.carga;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import uniandes.gload.core.Task;
+import uniandes.isis2203.logisticaAeroportuaria.Cliente.Cliente;
 public class ClientServerTask  extends Task {
 
 	private Cliente cliente;
+	private String error;
 	public ClientServerTask() {
 		cliente = new Cliente();
 	}
-	
 	@Override
 	public void fail() {
 		System.out.println(Task.MENSAJE_FAIL);
+		BufferedWriter bw = null;
+	    FileWriter fw = null;
+	    try {
+	        String data = "Se produjo alguna Exeption "+error;
+	        File file = new File("./data/log.txt");	        
+	        synchronized (file) {
+	        	if (!file.exists()) {
+		            file.createNewFile();
+		        }
+		        // flag true, indica adjuntar información al archivo.
+		        fw = new FileWriter(file.getAbsoluteFile(), true);
+		        bw = new BufferedWriter(fw);
+		        bw.write(data);	  
+			}
+	        
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	            if (bw != null)
+	                bw.close();
+	            if (fw != null)
+	                fw.close();
+	        } catch (IOException ex) {
+	            ex.printStackTrace();
+	        }
+	    }
 		
 	}
 
@@ -53,6 +86,7 @@ public class ClientServerTask  extends Task {
 			
 		}
 		catch (Exception e) {
+			error=e.getMessage();
 			fail();
 		}
 		
