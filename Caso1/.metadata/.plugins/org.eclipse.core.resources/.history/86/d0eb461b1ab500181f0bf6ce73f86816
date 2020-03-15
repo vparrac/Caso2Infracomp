@@ -1,0 +1,13 @@
+package mundo.Navasoft;
+
+public class Canal {
+	private boolean canal;
+	
+	public void enviar() {
+		
+	}
+	
+	public void recibir() {
+		
+	}
+}

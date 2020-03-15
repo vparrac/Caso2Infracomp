@@ -1,0 +1,19 @@
+package mundo.Navasoft;
+
+public class Mensaje {
+	private int mensaje;
+	private ClienteThread cliente;
+	
+	public Mensaje (int pMen, ClienteThread pC){
+		mensaje = pMen;
+		cliente = pC;
+	}
+	
+	public int getMensaje(){
+		return mensaje;
+	}
+	
+	public void respuesta(){
+		mensaje++;
+	}
+}

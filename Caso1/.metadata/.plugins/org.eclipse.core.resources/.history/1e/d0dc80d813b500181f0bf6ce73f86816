@@ -1,0 +1,20 @@
+package mundo.Navasoft;
+
+public class ClienteThread extends Thread {
+	
+	private int numeroConsultas;
+	private int id;
+	
+	private Mensaje[] mensajes;
+	
+	public ClienteThread(int pId, int pNum){
+		numeroConsultas = pNum;
+		mensajes = new Mensaje[numeroConsultas];
+		id = pId;
+	}
+	
+	public void retirarse() {
+		
+	}
+
+}

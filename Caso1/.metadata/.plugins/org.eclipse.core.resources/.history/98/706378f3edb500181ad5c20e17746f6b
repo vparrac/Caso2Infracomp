@@ -1,0 +1,33 @@
+package mundo.Navasoft;
+
+public class ServidorThread extends Thread{
+	private Buffer buf;
+	private Mensaje msn;
+
+	public ServidorThread(Buffer bf){
+		buf=bf;
+		msn=null;
+	}
+
+	@Override
+	public void run(){
+		System.out.println("Hilo servidor empezó");
+		while(buf.getNumClientes()!=0){
+			System.out.println("Sigue en el while");
+			msn= buf.retirarMensaje();
+			if(msn!=null){
+				System.err.println("El mensaje recibido es "+msn.getMensaje() );
+				msn.setRespuesta(msn.getMensaje()+1);
+				buf.enviarRespuesta(msn);	
+				buf.notificar();
+			}
+			else{		
+				try {
+					sleep(1000);
+				} catch (InterruptedException e) {					
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}

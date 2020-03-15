@@ -1,0 +1,54 @@
+package mundo.Navasoft;
+
+public class ClienteThread extends Thread {
+	
+	private int numeroConsultas;
+	private int id;
+	private int mensajeActual;
+	
+	private Buffer buffer;
+	
+	private Mensaje[] mensajes;
+	
+	public ClienteThread(int pId, int pNum, Buffer pB){
+		mensajeActual = 0;
+		numeroConsultas = pNum;
+		mensajes = new Mensaje[numeroConsultas];
+		id = pId;
+		buffer = pB;
+	}
+	
+	public void enviar(){
+		
+		mensajeActual++;
+	}
+	
+	public void inicializarMensajes(){
+		for(int i=0; i<numeroConsultas; i++){
+			int men = (int) Math.random()*10000;
+			mensajes[i] = new Mensaje(men, this);
+		}
+	}
+	
+	public void retirarse() {
+		
+	}
+
+	@Override
+	public void run(){
+		buffer.agregarCliente();
+		
+		inicializarMensajes();
+		
+		while(mensajeActual < numeroConsultas){
+			enviar();
+			try{
+				long espera = 1000;
+				sleep(espera);
+			}
+			catch(InterruptedException e){
+				e.printStackTrace();
+			}
+		}
+	}
+}

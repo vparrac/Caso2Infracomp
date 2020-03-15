@@ -1,0 +1,10 @@
+package mundo.Navasoft;
+
+import java.util.ArrayList;
+
+public class Buffer {
+	private int capacidad;
+	private int numeroClientes;
+	private ArrayList<Mensaje> buzon;
+	
+}

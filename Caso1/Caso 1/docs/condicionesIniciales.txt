@@ -1,0 +1,4 @@
+numClientes:74
+numSer:41
+numConsu:3
+capacidadBuf:16

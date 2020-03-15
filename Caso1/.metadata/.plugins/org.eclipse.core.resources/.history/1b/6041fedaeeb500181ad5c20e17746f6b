@@ -1,0 +1,64 @@
+package mundo.Navasoft;
+
+public class ClienteThread extends Thread {
+	//Número de consultas
+	private int numeroConsultas;
+	//Indica el indice en el que van los mensajes
+	private int mensajeActual;
+	//El Buffer donde va a dejar el mensaje
+	private Buffer buffer;
+	//Lista de consultas del cliente
+	private Mensaje[] mensajes;
+	//Id del cliente
+	private int id;
+	public ClienteThread(int pNum, Buffer pB, int id){
+		mensajeActual = 0; //Se inicia en el primer mensaje
+		numeroConsultas = pNum; //Con el número de consultas entradas por parámetro
+		mensajes = new Mensaje[numeroConsultas]; //Se inicializa el arreglo de mensajes con el número de consultas
+		buffer = pB;//El buffer es el entrado por parámetro
+		this.id=id;
+	}
+	public synchronized void enviar(){
+		System.out.println("Un cliente con el id : "+ id + " envió el mensaje: " +mensajes[mensajeActual].getMensaje());
+		Mensaje msnAc= mensajes[mensajeActual]; //Envia el mensaje en la posición actual		
+		buffer.recibirMensaje(msnAc); 
+		msnAc.esperar(); //Se duerme en el mensaje
+		recibirRespuesta(); //Una vez se despierta, recibe la respuesta
+	}
+	public void recibirRespuesta(){	
+		System.out.println("Un cliente con el id : "+ id + " recibió el mensaje: " +mensajes[mensajeActual].getRespuesta());
+		mensajeActual++; //Como el cliente conoce el men
+	}
+	public void inicializarMensajes(){
+		//Inicializa los mensajes del cliente de manera aleatoria
+		for(int i=0; i<numeroConsultas; i++){
+			int men = (int) Math.random()*10000;
+			mensajes[i] = new Mensaje(men, this);
+		}
+	}
+	public void retirarse() {
+		//Si ya se enviaron y recibieron respuesta de todos los mensajes, el cliente se retira
+		System.out.println("El cliente con el "+ id +" se retira del servidor");
+		buffer.retirarCliente();
+	}	
+	@Override
+	public void run(){		
+		buffer.agregarCliente();
+		inicializarMensajes();
+		while(mensajeActual < numeroConsultas){
+			System.out.println("Mensaje actual del cliente: " +mensajeActual);
+			System.out.println("Número de consultas cliente: " +numeroConsultas);
+			enviar();
+			try{
+				long espera = 500;
+				sleep(espera);
+			}
+			catch(InterruptedException e){
+				e.printStackTrace();
+			}
+			yield();
+		}		
+		retirarse();
+	}
+	
+}

@@ -1,0 +1,46 @@
+package mundo.Navasoft;
+
+import java.util.ArrayList;
+
+public class Buffer {
+	private int capacidad;
+	private int numeroClientes;
+	private ArrayList<Mensaje> buzon;
+	
+	public Buffer(int pCapacidad){
+		capacidad = pCapacidad;
+	}
+	
+	public synchronized int getNumClientes(){
+		return numeroClientes;
+	}
+	
+	public synchronized void agregarCliente(){
+		numeroClientes++;
+	}
+	
+	public synchronized void retirarCliente(){
+		numeroClientes--;
+	}
+	
+	public synchronized void enviarRespuesta(Mensaje pMen){
+		pMen.notify();
+	}
+	
+	public synchronized void recibirMensaje(Mensaje pMensaje){
+		while(buzon.size() >= capacidad){
+			try{	
+				wait();
+			}
+			catch(InterruptedException e){
+				e.printStackTrace();
+			}
+		}
+		
+		buzon.add(pMensaje);
+	}
+	
+	public synchronized Mensaje retirarMensaje(){
+		return buzon.remove(buzon.size()-1);
+	}
+}

@@ -1,0 +1,73 @@
+package mundo.Navasoft;
+
+import java.util.ArrayList;
+
+public class Buffer {	
+	//Variable que representa la capacidad 
+	private int capacidad;
+	//Variable que indican el número de clientes que está esperando 
+	private int numeroClientes;
+	//Buzón donde se guardan los mensajes
+	private ArrayList<Mensaje> buzon;
+		
+	public Buffer(int pCapacidad){
+		//Se inicializa en la capacidad entrada por parámetro
+		capacidad = pCapacidad;
+		//Se inicializa vacío el buzón
+		buzon= new ArrayList<>();
+	}	
+	public void setCapacidad(int pC){
+		//Se cambia la velocidad del Buffer
+		capacidad = pC;
+	}
+	public synchronized int getNumClientes(){
+		// Numero de clientes que esperan respuesta
+		return numeroClientes;
+	}
+	public synchronized void agregarCliente(){
+		//Aumenta en 1 el número de cliente
+		numeroClientes++;
+	}
+	public synchronized void retirarCliente(){
+		//Retira un cliente
+		numeroClientes--;
+	}
+	public synchronized void enviarRespuesta(Mensaje pMen){
+		//Como el hilo esta esperando sobre el mensaje, entonces notifico al mensaje que es donde espera el cliente
+		synchronized (pMen) {			
+			System.out.println("Un hilo servidor envió la respuesta");
+			//Notificó al cliente que esta esperando
+			pMen.notify();
+		}				
+	}
+	public synchronized void recibirMensaje(Mensaje pMensaje){
+		System.out.println("Capacidad del Buffer: " +capacidad);		
+		// Mientras se pueda agregar al buzón se agregará 
+		while(buzon.size() >= capacidad){
+			try{				
+				System.out.println("El hilo va a dormir");
+				//Si no puedo agregar espero
+				wait();
+			}
+			catch(InterruptedException e){
+				e.printStackTrace();
+			}
+		}
+		//Si si puedo, agrego el mensaje al buzón
+		buzon.add(pMensaje);
+	}
+	public synchronized Mensaje retirarMensaje(){
+		//Si el buzón tiene mensajes, lo retirno
+		if(!buzon.isEmpty()){
+			System.out.println("Se retiró el mensaje :D");
+			return buzon.remove(buzon.size()-1);
+		}
+		else{
+			return null;
+		}
+	}
+	public synchronized void notificar(){
+		//Sirve para que el hilo servidor pueda notificar que ya hay mensaje menos en el buzón
+		notify();
+	}
+}

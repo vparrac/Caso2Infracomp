@@ -1,0 +1,7 @@
+package mundo.Navasoft;
+
+public class ServidorThread {
+	private int id;
+	
+
+}

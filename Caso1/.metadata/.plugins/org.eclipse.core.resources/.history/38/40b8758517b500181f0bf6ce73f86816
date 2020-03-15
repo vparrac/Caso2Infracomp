@@ -1,0 +1,8 @@
+package mundo.Navasoft;
+
+public class Mensaje {
+	private int mensaje;
+	private int Cliente;
+	
+	public Mensaje (int pMen)
+}
